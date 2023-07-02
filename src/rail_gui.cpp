@@ -302,8 +302,9 @@ static void PlaceRail_Bridge(TileIndex tile, Window *w)
 static void PlaceRail_Tunnel(TileIndex tile, Window *w)
 {
 	if (IsTunnelTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
 		Point pt = {0, 0};
-		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, tile, tile);
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
 	} else {
 		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_TUNNEL);
 	}
@@ -722,7 +723,11 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_TUNNEL:
 				PlaceRail_Tunnel(tile, this);
 				break;
-
+			/*
+			case WID_RAT_BUILD_TUNNEL:
+				PlaceRail_Tunnel(tile, this);
+				break;
+			*/
 			case WID_RAT_CONVERT_RAIL:
 				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CONVERT_RAIL);
 				break;
