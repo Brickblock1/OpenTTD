@@ -510,6 +510,7 @@ add_files(
     tree_cmd.h
     tree_gui.cpp
     tree_map.h
+    tunnel_gui.cpp
     tunnel_map.cpp
     tunnel_map.h
     tunnelbridge.h

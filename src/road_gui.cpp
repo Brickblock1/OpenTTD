@@ -132,25 +132,17 @@ static void PlaceRoad_Bridge(TileIndex tile, Window *w)
 }
 
 /**
- * Callback executed after a build road tunnel command has been called.
- *
- * @param result Whether the build succeeded.
- * @param start_tile Starting tile of the tunnel.
+ * Callback to start building a tunnel.
+ * @param tile Start tile of the tunnel.
  */
-void CcBuildRoadTunnel(Commands, const CommandCost &result, TileIndex start_tile)
+static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
-	if (result.Succeeded()) {
-		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, start_tile);
-		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-
-		DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(start_tile));
-		ConnectRoadToStructure(start_tile, start_direction);
-
-		TileIndex end_tile = GetOtherTunnelBridgeEnd(start_tile);
-		DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
-		ConnectRoadToStructure(end_tile, end_direction);
+	if (IsBridgeTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
+		Point pt = {0, 0};
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_BRIDGE, pt, other_tile, tile);
 	} else {
-		SetRedErrorSquare(_build_tunnel_endtile);
+		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
 	}
 }
 
@@ -657,8 +649,7 @@ struct BuildRoadToolbarWindow : Window {
 				break;
 
 			case WID_ROT_BUILD_TUNNEL:
-				Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRoadTunnel,
-						tile, TRANSPORT_ROAD, _cur_roadtype);
+				PlaceRoad_Tunnel(tile, this);
 				break;
 
 			case WID_ROT_CONVERT_ROAD:
@@ -814,7 +805,7 @@ struct BuildRoadToolbarWindow : Window {
 
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_ROAD, _cur_roadtype);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_ROAD, _cur_roadtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 

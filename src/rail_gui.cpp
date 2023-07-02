@@ -299,8 +299,19 @@ static void PlaceRail_Bridge(TileIndex tile, Window *w)
 	}
 }
 
-/** Command callback for building a tunnel */
-void CcBuildRailTunnel(Commands, const CommandCost &result, TileIndex tile)
+static void PlaceRail_Tunnel(TileIndex tile, Window *w)
+{
+	if (IsTunnelTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
+		Point pt = {0, 0};
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
+	} else {
+		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_TUNNEL);
+	}
+}
+
+/** Command callback for building a tunnel 
+void CcBuildRailTunnel(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded()) {
 		if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
@@ -309,6 +320,7 @@ void CcBuildRailTunnel(Commands, const CommandCost &result, TileIndex tile)
 		SetRedErrorSquare(_build_tunnel_endtile);
 	}
 }
+*/
 
 /**
  * Toggles state of the Remove button of Build rail toolbar
@@ -707,11 +719,15 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_BRIDGE:
 				PlaceRail_Bridge(tile, this);
 				break;
-
+			
+			case WID_RAT_BUILD_TUNNEL:
+				PlaceRail_Tunnel(tile, this);
+				break;
+			/*
 			case WID_RAT_BUILD_TUNNEL:
 				Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype);
 				break;
-
+			*/
 			case WID_RAT_CONVERT_RAIL:
 				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CONVERT_RAIL);
 				break;
@@ -734,6 +750,11 @@ struct BuildRailToolbarWindow : Window {
 			switch (select_proc) {
 				default: NOT_REACHED();
 				case DDSP_BUILD_BRIDGE:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
+					break;
+
+				case DDSP_BUILD_TUNNEL:
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
 					break;
@@ -809,7 +830,7 @@ struct BuildRailToolbarWindow : Window {
 
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_RAIL, _cur_railtype);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_RAIL, _cur_railtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
