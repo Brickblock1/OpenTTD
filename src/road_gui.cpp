@@ -137,7 +137,7 @@ static void PlaceRoad_Bridge(TileIndex tile, Window *w)
  */
 static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
-	if (IsBridgeTile(tile)) {
+	if (IsTunnelTile(tile)) {
 		Point pt = {0, 0};
 		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, tile, tile);
 	} else {
@@ -810,7 +810,7 @@ struct BuildRoadToolbarWindow : Window {
 
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_ROAD, _cur_roadtype);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_ROAD, _cur_roadtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 

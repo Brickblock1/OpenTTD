@@ -678,7 +678,7 @@ CommandCost CmdBuildBridge(DoCommandFlag flags, TileIndex tile_end, TileIndex ti
  * @param road_rail_type railtype or roadtype
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportType transport_type, TunnelType tunnel_type, byte road_rail_type)
+CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportType transport_type, TunnelType tunnel_type, uint8_t road_rail_type)
 {
 	CompanyID company = _current_company;
 
@@ -1819,12 +1819,12 @@ static void GetTileDesc_TunnelBridge(TileIndex tile, TileDesc *td)
 		if (tram_rt != INVALID_ROADTYPE && (td->tram_speed == 0 || spd < td->tram_speed)) td->tram_speed = spd;
 
 	}if (tt == TRANSPORT_RAIL) {
-		const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
+		const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
 		td->rail_speed = rti->max_speed;
 		td->railtype = rti->strings.name;
 
 		if (IsTunnel(tile)) {
-			uint16 spd = GetTunnelSpec(GetTunnelType(tile))->speed;
+			uint16_t spd = GetTunnelSpec(GetTunnelType(tile))->speed;
 			/* rail speed special-cases 0 as unlimited, hides display of limit etc. */
 			if (spd == UINT16_MAX) spd = 0;
 			if (td->rail_speed == 0 || spd < td->rail_speed) {
@@ -1832,7 +1832,7 @@ static void GetTileDesc_TunnelBridge(TileIndex tile, TileDesc *td)
 			}
 		}
 	} else if (tt == TRANSPORT_ROAD && IsTunnel(tile)) {
-		uint16 spd = GetTunnelSpec(GetTunnelType(tile))->speed;
+		uint16_t spd = GetTunnelSpec(GetTunnelType(tile))->speed;
 		/* road speed special-cases 0 as unlimited, hides display of limit etc. */
 		if (spd == UINT16_MAX) spd = 0;
 		if (road_rt != INVALID_ROADTYPE && (td->road_speed == 0 || spd < td->road_speed)) td->road_speed = spd;

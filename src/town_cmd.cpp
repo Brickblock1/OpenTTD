@@ -1428,8 +1428,8 @@ static bool GrowTownWithTunnel(const Town *t, const TileIndex tile, const DiagDi
 
 	/* Attempt to build the tunnel. Return false if it fails to let the town build a road instead. */
 	RoadType rt = GetTownRoadType(t);
-	if (Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, TRANSPORT_ROAD, rt).Succeeded()) {
-		Command<CMD_BUILD_TUNNEL>::Do(DC_EXEC | CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, TRANSPORT_ROAD, rt);
+	if (Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, tile, TRANSPORT_ROAD, rt).Succeeded()) {
+		Command<CMD_BUILD_TUNNEL>::Do(DC_EXEC | CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, tile, TRANSPORT_ROAD, rt);
 		_grow_town_result = GROWTH_SUCCEED;
 		return true;
 	}
