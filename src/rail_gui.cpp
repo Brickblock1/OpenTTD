@@ -723,11 +723,7 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_TUNNEL:
 				PlaceRail_Tunnel(tile, this);
 				break;
-			/*
-			case WID_RAT_BUILD_TUNNEL:
-				Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype);
-				break;
-			*/
+
 			case WID_RAT_CONVERT_RAIL:
 				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CONVERT_RAIL);
 				break;
@@ -756,7 +752,7 @@ struct BuildRailToolbarWindow : Window {
 
 				case DDSP_BUILD_TUNNEL:
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
 					break;
 
 				case DDSP_PLACE_RAIL:
@@ -830,7 +826,7 @@ struct BuildRailToolbarWindow : Window {
 
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_RAIL, _cur_railtype);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_RAIL, _cur_railtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 

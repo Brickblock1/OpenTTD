@@ -14,9 +14,11 @@
 #include "road.h"
 #include "strings_func.h"
 #include "window_func.h"
+#include "viewport_func.h"
 #include "sound_func.h"
 #include "gfx_func.h"
 #include "tunnelbridge.h"
+#include "tilehighlight_func.h"
 #include "sortlist_type.h"
 #include "widgets/dropdown_func.h"
 #include "core/geometry_func.hpp"
@@ -51,21 +53,26 @@ typedef GUIList<BuildBridgeData> GUIBridgeList; ///< List of bridges, used in #B
  *
  * @param result Whether the build succeeded
  * @param cmd unused
- * @param end_tile End tile of the bridge.
- * @param tile_start start tile
+ * @param tile start tile
  * @param transport_type transport type.
  */
-void CcBuildTunnel(Commands cmd, const CommandCost &result, TileIndex end_tile, TileIndex tile_start, TransportType transport_type, byte)
+void CcBuildTunnel(Commands cmd, const CommandCost &result, TileIndex tile, TransportType transport_type, byte)
 {
-	if (result.Failed()) return;
-	if (_settings_client.sound.confirm) SndPlayTileFx(SND_27_CONSTRUCTION_BRIDGE, end_tile);
-
-	if (transport_type == TRANSPORT_ROAD) {
-		DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
-		ConnectRoadToStructure(end_tile, end_direction);
-
-		DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(tile_start));
-		ConnectRoadToStructure(tile_start, start_direction);
+	if (result.Succeeded()) {
+		if (transport_type = TRANSPORT_RAIL) {
+			if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
+			if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		} else {
+			if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, tile);
+			if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+			DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(tile));
+			ConnectRoadToStructure(tile, start_direction);
+			TileIndex end_tile = GetOtherTunnelBridgeEnd(tile);
+			DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
+			ConnectRoadToStructure(end_tile, end_direction);
+		}
+	} else {
+		SetRedErrorSquare(_build_tunnel_endtile);
 	}
 }
 
@@ -106,7 +113,7 @@ private:
 		return a.spec->speed < b.spec->speed;
 	}
 
-	void BuildBridge(BridgeType type)
+	void BuildTunnel(BridgeType type)
 	{
 		switch (this->transport_type) {
 			case TRANSPORT_RAIL: _last_railbridge_type = type; break;
@@ -114,7 +121,7 @@ private:
 			default: break;
 		}
 		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel,
-					this->end_tile, this->start_tile, this->transport_type, this->road_rail_type);
+					this->start_tile, this->transport_type, this->road_rail_type);
 	}
 
 	/** Sort the builable bridges */
@@ -250,7 +257,7 @@ public:
 		const uint8 i = keycode - '1';
 		if (i < 9 && i < this->bridges.size()) {
 			/* Build the requested bridge */
-			this->BuildBridge(this->bridges[i].index);
+			this->BuildTunnel(this->bridges[i].index);
 			this->Close();
 			return ES_HANDLED;
 		}
@@ -264,7 +271,7 @@ public:
 			case WID_BBS_BRIDGE_LIST: {
 				auto it = this->vscroll->GetScrolledItemFromWidget(this->bridges, pt.y, this, WID_BBS_BRIDGE_LIST);
 				if (it != this->bridges.end()) {
-					this->BuildBridge(it->index);
+					this->BuildTunnel(it->index);
 					this->Close();
 				}
 				break;
@@ -379,14 +386,14 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 		default: break; // water ways and air routes don't have bridge types
 	}
 	if (_ctrl_pressed && CheckBridgeAvailability(last_bridge_type, bridge_len).Succeeded()) {
-		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel, end, start, transport_type, road_rail_type);
+		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel, start, transport_type, road_rail_type);
 		return;
 	}
 	
 	/* only query bridge building possibility once, result is the same for all bridges!
 	 * returns CMD_ERROR on failure, and price on success */
 	StringID errmsg = INVALID_STRING_ID;
-	CommandCost ret = Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()) | DC_QUERY_COST, end, start, transport_type, road_rail_type);
+	CommandCost ret = Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()) | DC_QUERY_COST, start, transport_type, road_rail_type);
 
 	GUIBridgeList bl;
 	if (ret.Failed()) {
@@ -401,7 +408,7 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 				/* In case we add a new road type as well, we must be aware of those costs. */
 				RoadType road_rt = INVALID_ROADTYPE;
 				RoadType tram_rt = INVALID_ROADTYPE;
-				if (IsBridgeTile(start)) {
+				if (IsTunnelTile(start)) {
 					road_rt = GetRoadTypeRoad(start);
 					tram_rt = GetRoadTypeTram(start);
 				}

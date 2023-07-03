@@ -74,7 +74,11 @@ void ShowExtraViewportWindowForTileUnderCursor();
 /* bridge_gui.cpp */
 void ShowBuildBridgeWindow(TileIndex start, TileIndex end, TransportType transport_type, uint8_t bridge_type);
 
-/* music_gui.cpp */
+/* tunnel_gui.cpp */
+void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transport_type, byte bridge_type);
+
+void ShowBuildIndustryWindow();
+void ShowFoundTownWindow();
 void ShowMusicWindow();
 
 #endif /* GUI_H */

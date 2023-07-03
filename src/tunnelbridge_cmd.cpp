@@ -620,7 +620,7 @@ CommandCost CmdBuildBridge(DoCommandFlag flags, TileIndex tile_end, TileIndex ti
  * @param road_rail_type railtype or roadtype
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TileIndex end_tile2, TransportType transport_type, byte road_rail_type)
+CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportType transport_type, byte road_rail_type)
 {
 	CompanyID company = _current_company;
 
