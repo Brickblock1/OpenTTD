@@ -13,6 +13,7 @@
 #include "command_type.h"
 #include "transport_type.h"
 #include "bridge.h"
+#include "tunnel.h"
 
 CommandCost CmdBuildBridge(DoCommandFlag flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, uint8_t road_rail_type);
 CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, uint8_t road_rail_type);

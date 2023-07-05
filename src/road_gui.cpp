@@ -138,11 +138,10 @@ static void PlaceRoad_Bridge(TileIndex tile, Window *w)
 static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
 	if (IsBridgeTile(tile)) {
-		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
 		Point pt = {0, 0};
-		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_BRIDGE, pt, other_tile, tile);
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, tile, tile);
 	} else {
-		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
+		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_TUNNEL);
 	}
 }
 
@@ -729,6 +728,12 @@ struct BuildRoadToolbarWindow : Window {
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
 					break;
+
+				case DDSP_BUILD_TUNNEL:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
+					break;
+
 
 				case DDSP_DEMOLISH_AREA:
 					GUIPlaceProcDragXY(select_proc, start_tile, end_tile);

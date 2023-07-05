@@ -46,10 +46,12 @@
 
 #include "table/strings.h"
 #include "table/bridge_land.h"
+#include "table/tunnel_land.h"
 
 #include "safeguards.h"
 
 BridgeSpec _bridge[MAX_BRIDGES]; ///< The specification of all bridges.
+TunnelSpec _tunnel[MAX_TUNNELS]; ///< The specification of all tunnels.
 TileIndex _build_tunnel_endtile; ///< The end of a tunnel; as hidden return from the tunnel build command for GUI purposes.
 
 /** Z position of the bridge sprites relative to bridge height (downwards) */
@@ -99,6 +101,15 @@ void ResetBridges()
 	memcpy(&_bridge, &_orig_bridge, sizeof(_orig_bridge));
 }
 
+/** Reset the data been eventually changed by the grf loaded. */
+void ResetTunnels()
+{
+	/* Wipe out current tunnels */
+	memset(&_tunnel, 0, sizeof(_tunnel));
+	/* And finally, reinstall default data */
+	memcpy(&_tunnel, &_orig_tunnel, sizeof(_orig_tunnel));
+}
+
 /**
  * Calculate the price factor for building a long bridge.
  * Basically the cost delta is 1,1, 1, 2,2, 3,3,3, 4,4,4,4, 5,5,5,5,5, 6,6,6,6,6,6,  7,7,7,7,7,7,7,  8,8,8,8,8,8,8,8,
@@ -120,6 +131,26 @@ int CalcBridgeLenCostFactor(int length)
 	}
 }
 
+/**
+ * Calculate the price factor for building a long tunnel uses bridge values rn.
+ * Basically the cost delta is 1,1, 1, 2,2, 3,3,3, 4,4,4,4, 5,5,5,5,5, 6,6,6,6,6,6,  7,7,7,7,7,7,7,  8,8,8,8,8,8,8,8,
+ * @param length Length of the tunnel.
+ * @return Price factor for the tunnel.
+ */
+int CalcTunnelLenCostFactor(int length)
+{
+	if (length < 2) return length;
+
+	length -= 2;
+	int sum = 2;
+	for (int delta = 1;; delta++) {
+		for (int count = 0; count < delta; count++) {
+			if (length == 0) return sum;
+			sum += delta;
+			length--;
+		}
+	}
+}
 /**
  * Get the foundation for a bridge.
  * @param tileh The slope to build the bridge on.
@@ -214,6 +245,32 @@ CommandCost CheckBridgeAvailability(BridgeType bridge_type, uint bridge_len, DoC
 	if (b->min_length > bridge_len) return CMD_ERROR;
 	if (bridge_len <= max) return CommandCost();
 	return_cmd_error(STR_ERROR_BRIDGE_TOO_LONG);
+}
+
+/**
+ * Is a tinnel of the specified type and length available?
+ * @param tunnel_type Wanted type of tunnel.
+ * @param tunnel_len  Wanted length of the tunnel.
+ * @param flags       Type of operation.
+ * @return A succeeded (the requested tunnel is available) or failed (it cannot be built) command.
+ */
+CommandCost CheckTunnelAvailability(TunnelType tunnel_type, uint tunnel_len, DoCommandFlag flags)
+{
+	if (flags & DC_QUERY_COST) {
+		if (tunnel_len <= _settings_game.construction.max_tunnel_length) return CommandCost();
+		return_cmd_error(STR_ERROR_TUNNEL_TOO_LONG);
+	}
+
+	if (tunnel_type >= MAX_TUNNELS) return CMD_ERROR;
+
+	const TunnelSpec *b = GetTunnelSpec(tunnel_type);
+	if (b->avail_year > TimerGameCalendar::year) return CMD_ERROR;
+
+	uint max = std::min(b->max_length, _settings_game.construction.max_tunnel_length);
+
+	if (b->min_length > tunnel_len) return CMD_ERROR;
+	if (tunnel_len <= max) return CommandCost();
+	return_cmd_error(STR_ERROR_TUNNEL_TOO_LONG);
 }
 
 /**
@@ -617,10 +674,11 @@ CommandCost CmdBuildBridge(DoCommandFlag flags, TileIndex tile_end, TileIndex ti
  * @param flags type of operation
  * @param start_tile start tile of tunnel
  * @param transport_type transport type
+ * @param tunnel_type tunnel type
  * @param road_rail_type railtype or roadtype
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportType transport_type, byte road_rail_type)
+CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportType transport_type, TunnelType tunnel_type, byte road_rail_type)
 {
 	CompanyID company = _current_company;
 
@@ -1755,6 +1813,26 @@ static void GetTileDesc_TunnelBridge(TileIndex tile, TileDesc *td)
 		}
 	} else if (tt == TRANSPORT_ROAD && !IsTunnel(tile)) {
 		uint16_t spd = GetBridgeSpec(GetBridgeType(tile))->speed;
+		/* road speed special-cases 0 as unlimited, hides display of limit etc. */
+		if (spd == UINT16_MAX) spd = 0;
+		if (road_rt != INVALID_ROADTYPE && (td->road_speed == 0 || spd < td->road_speed)) td->road_speed = spd;
+		if (tram_rt != INVALID_ROADTYPE && (td->tram_speed == 0 || spd < td->tram_speed)) td->tram_speed = spd;
+
+	}if (tt == TRANSPORT_RAIL) {
+		const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
+		td->rail_speed = rti->max_speed;
+		td->railtype = rti->strings.name;
+
+		if (IsTunnel(tile)) {
+			uint16 spd = GetTunnelSpec(GetTunnelType(tile))->speed;
+			/* rail speed special-cases 0 as unlimited, hides display of limit etc. */
+			if (spd == UINT16_MAX) spd = 0;
+			if (td->rail_speed == 0 || spd < td->rail_speed) {
+				td->rail_speed = spd;
+			}
+		}
+	} else if (tt == TRANSPORT_ROAD && IsTunnel(tile)) {
+		uint16 spd = GetTunnelSpec(GetTunnelType(tile))->speed;
 		/* road speed special-cases 0 as unlimited, hides display of limit etc. */
 		if (spd == UINT16_MAX) spd = 0;
 		if (road_rt != INVALID_ROADTYPE && (td->road_speed == 0 || spd < td->road_speed)) td->road_speed = spd;

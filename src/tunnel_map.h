@@ -36,6 +36,18 @@ inline bool IsTunnelTile(Tile t)
 	return IsTileType(t, MP_TUNNELBRIDGE) && IsTunnel(t);
 }
 
+/**
+ * Determines the type of tunnel on a tile
+ * @param t The tile to analyze
+ * @pre IsBridgeTile(t)
+ * @return The tunnel type
+ */
+static inline TunnelType GetTunnelType(Tile t)
+{
+	assert(IsTunnelTile(t));
+	return GB(t.m6(), 2, 4);
+}
+
 TileIndex GetOtherTunnelEnd(TileIndex);
 bool IsTunnelInWay(TileIndex, int z);
 bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir);

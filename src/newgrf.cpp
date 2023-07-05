@@ -15,6 +15,7 @@
 #include "engine_func.h"
 #include "engine_base.h"
 #include "bridge.h"
+#include "tunnel.h"
 #include "town.h"
 #include "newgrf_engine.h"
 #include "newgrf_text.h"
@@ -2332,6 +2333,107 @@ static ChangeInfoResult BridgeChangeInfo(uint brid, int numinfo, int prop, ByteR
 
 			case 0x13: // 16 bits cost multiplier
 				bridge->price = buf.ReadWord();
+				break;
+
+			default:
+				ret = CIR_UNKNOWN;
+				break;
+		}
+	}
+
+	return ret;
+}
+
+static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteReader *buf)
+{
+	ChangeInfoResult ret = CIR_SUCCESS;
+
+	if (tuid + numinfo > MAX_TUNNELS) {
+		GrfMsg(1, "TunnelChangeInfo: Tunnel {} is invalid, max {}, ignoring", tuid + numinfo, MAX_TUNNELS);
+		return CIR_INVALID_ID;
+	}
+
+	for (int i = 0; i < numinfo; i++) {
+		TunnelSpec *tunnel = &_tunnel[tuid + i];
+
+		switch (prop) {
+			case 0x08: { // Year of availability
+				/* We treat '0' as always available */
+				byte year = buf->ReadByte();
+				tunnel->avail_year = (year > 0 ? ORIGINAL_BASE_YEAR + year : 0);
+				break;
+			}
+
+			case 0x09: // Minimum length
+				tunnel->min_length = buf->ReadByte();
+				break;
+
+			case 0x0A: // Maximum length
+				tunnel->max_length = buf->ReadByte();
+				if (tunnel->max_length > 16) tunnel->max_length = UINT16_MAX;
+				break;
+
+			case 0x0B: // Cost factor
+				tunnel->price = buf->ReadByte();
+				break;
+
+			case 0x0C: // Maximum speed
+				tunnel->speed = buf->ReadWord();
+				if (tunnel->speed == 0) tunnel->speed = UINT16_MAX;
+				break;
+
+			case 0x0D: { // Tunnel sprite tables
+				byte tableid = buf->ReadByte();
+				byte numtables = buf->ReadByte();
+
+				if (tunnel->sprite_table == nullptr) {
+					/* Allocate memory for sprite table pointers and zero out */
+					tunnel->sprite_table = CallocT<PalSpriteID*>(7);
+				}
+
+				for (; numtables-- != 0; tableid++) {
+					if (tableid >= 7) { // skip invalid data
+						GrfMsg(1, "TunnelChangeInfo: Table {} >= 7, skipping", tableid);
+						for (byte sprite = 0; sprite < 32; sprite++) buf->ReadDWord();
+						continue;
+					}
+
+					if (tunnel->sprite_table[tableid] == nullptr) {
+						tunnel->sprite_table[tableid] = MallocT<PalSpriteID>(32);
+					}
+
+					for (byte sprite = 0; sprite < 32; sprite++) {
+						SpriteID image = buf->ReadWord();
+						PaletteID pal  = buf->ReadWord();
+
+						tunnel->sprite_table[tableid][sprite].sprite = image;
+						tunnel->sprite_table[tableid][sprite].pal    = pal;
+
+						MapSpriteMappingRecolour(&tunnel->sprite_table[tableid][sprite]);
+					}
+				}
+				break;
+			}
+
+			case 0x0F: // Long format year of availability (year since year 0)
+				tunnel->avail_year = Clamp(buf->ReadDWord(), MIN_YEAR, MAX_YEAR);
+				break;
+
+			case 0x10: { // purchase string
+				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf->ReadWord());
+				if (newone != STR_UNDEFINED) tunnel->material = newone;
+				break;
+			}
+
+			case 0x11: // description of tunnel with rails or roads
+			case 0x12: {
+				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf->ReadWord());
+				if (newone != STR_UNDEFINED) tunnel->transport_name[prop - 0x11] = newone;
+				break;
+			}
+
+			case 0x13: // 16 bits cost multiplier
+				tunnel->price = buf->ReadWord();
 				break;
 
 			default:
@@ -4959,6 +5061,7 @@ static void FeatureChangeInfo(ByteReader &buf)
 		/* GSF_ROADTYPES */     RoadTypeChangeInfo,
 		/* GSF_TRAMTYPES */     TramTypeChangeInfo,
 		/* GSF_ROADSTOPS */     RoadStopChangeInfo,
+		/* GSF_TUNNELS */       TunnelChangeInfo,
 	};
 	static_assert(GSF_END == lengthof(handler));
 
@@ -8794,6 +8897,9 @@ void ResetNewGRFData()
 
 	/* Copy/reset original bridge info data */
 	ResetBridges();
+
+	/* Copy/reset original tunnel info data */
+	ResetTunnels();
 
 	/* Reset rail type information */
 	ResetRailTypes();
