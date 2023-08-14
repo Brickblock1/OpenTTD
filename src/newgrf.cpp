@@ -2382,39 +2382,6 @@ static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteR
 				if (tunnel->speed == 0) tunnel->speed = UINT16_MAX;
 				break;
 
-			case 0x0D: { // Tunnel sprite tables
-				byte tableid = buf->ReadByte();
-				byte numtables = buf->ReadByte();
-
-				if (tunnel->sprite_table == nullptr) {
-					/* Allocate memory for sprite table pointers and zero out */
-					tunnel->sprite_table = CallocT<PalSpriteID*>(7);
-				}
-
-				for (; numtables-- != 0; tableid++) {
-					if (tableid >= 7) { // skip invalid data
-						GrfMsg(1, "TunnelChangeInfo: Table {} >= 7, skipping", tableid);
-						for (byte sprite = 0; sprite < 32; sprite++) buf->ReadDWord();
-						continue;
-					}
-
-					if (tunnel->sprite_table[tableid] == nullptr) {
-						tunnel->sprite_table[tableid] = MallocT<PalSpriteID>(32);
-					}
-
-					for (byte sprite = 0; sprite < 32; sprite++) {
-						SpriteID image = buf->ReadWord();
-						PaletteID pal  = buf->ReadWord();
-
-						tunnel->sprite_table[tableid][sprite].sprite = image;
-						tunnel->sprite_table[tableid][sprite].pal    = pal;
-
-						MapSpriteMappingRecolour(&tunnel->sprite_table[tableid][sprite]);
-					}
-				}
-				break;
-			}
-
 			case 0x0F: // Long format year of availability (year since year 0)
 				tunnel->avail_year = Clamp(buf->ReadDWord(), MIN_YEAR, MAX_YEAR);
 				break;

@@ -87,8 +87,7 @@ private:
 	static GUITunnelList::SortFunction * const sorter_funcs[];
 
 	/* Internal variables */
-	TileIndex start_tile;
-	TileIndex end_tile;
+	TileIndex tile;
 	TransportType transport_type;
 	byte road_rail_type;
 	GUITunnelList tunnels;
@@ -121,7 +120,7 @@ private:
 			default: break;
 		}
 		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel,
-					this->start_tile, this->transport_type, type, this->road_rail_type);
+					this->tile, this->transport_type, type, this->road_rail_type);
 	}
 
 	/** Sort the builable tunnels */
@@ -155,9 +154,8 @@ private:
 	}
 
 public:
-	BuildTunnelWindow(WindowDesc *desc, TileIndex start, TileIndex end, TransportType transport_type, byte road_rail_type, GUITunnelList &&bl) : Window(desc),
-		start_tile(start),
-		end_tile(end),
+	BuildTunnelWindow(WindowDesc *desc, TileIndex tile, TransportType transport_type, byte road_rail_type, GUITunnelList &&bl) : Window(desc),
+		tile(tile),
 		transport_type(transport_type),
 		road_rail_type(road_rail_type),
 		tunnels(std::move(bl))
@@ -391,12 +389,11 @@ static WindowDesc _build_tunnel_desc(
  * @param transport_type The transport type
  * @param road_rail_type The road/rail type
  */
-void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transport_type, byte road_rail_type)
+void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transport_type, byte road_rail_type)
 {
 	CloseWindowByClass(WC_BUILD_TUNNEL);
-
 	/* The tunnel length */
-	const uint tunnel_len = GetTunnelBridgeLength(start, end);
+	const uint tunnel_len = GetTunnelBridgeLength(tile, tile2);
 
 	/* If Ctrl is being pressed, check whether the last tunnel built is available
 	 * If so, return this tunnel type. Otherwise continue normally.
@@ -409,15 +406,15 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 		case TRANSPORT_RAIL: last_tunnel_type = _last_railtunnel_type; break;
 		default: break; // water ways and air routes don't have tunnel types
 	}
-	if (_ctrl_pressed && CheckTunnelAvailability(last_tunnel_type, tunnel_len).Succeeded()) {
-		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel, start, transport_type, last_tunnel_type, road_rail_type);
+	if (_ctrl_pressed && CheckTunnelAvailability(last_tunnel_type, tunnel_len + 2).Succeeded()) {
+		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel, tile, transport_type, last_tunnel_type, road_rail_type);
 		return;
 	}
 	
 	/* only query tunnel building possibility once, result is the same for all tunnels!
 	 * returns CMD_ERROR on failure, and price on success */
 	StringID errmsg = INVALID_STRING_ID;
-	CommandCost ret = Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()) | DC_QUERY_COST, start, transport_type, last_tunnel_type, road_rail_type);
+	CommandCost ret = Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()) | DC_QUERY_COST, tile, transport_type, last_tunnel_type, road_rail_type);
 
 	GUITunnelList bl;
 	if (ret.Failed()) {
@@ -432,9 +429,9 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 				/* In case we add a new road type as well, we must be aware of those costs. */
 				RoadType road_rt = INVALID_ROADTYPE;
 				RoadType tram_rt = INVALID_ROADTYPE;
-				if (IsTunnelTile(start)) {
-					road_rt = GetRoadTypeRoad(start);
-					tram_rt = GetRoadTypeTram(start);
+				if (IsTunnelTile(tile)) {
+					road_rt = GetRoadTypeRoad(tile);
+					tram_rt = GetRoadTypeTram(tile);
 				}
 				if (RoadTypeIsRoad((RoadType)road_rail_type)) {
 					road_rt = (RoadType)road_rail_type;
@@ -455,7 +452,7 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 		CommandCost type_check;
 		/* loop for all tunneltypes */
 		for (TunnelType tun_type = 0; tun_type != MAX_TUNNELS; tun_type++) {
-			type_check = CheckTunnelAvailability(tun_type, tunnel_len);
+			type_check = CheckTunnelAvailability(tun_type, tunnel_len + 2);
 			if (type_check.Succeeded()) {
 				/* tunnel is accepted, add to list */
 				BuildTunnelData &item = bl.emplace_back();
@@ -475,8 +472,8 @@ void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transpo
 	}
 
 	if (!bl.empty()) {
-		new BuildTunnelWindow(&_build_tunnel_desc, start, end, transport_type, road_rail_type, std::move(bl));
+		new BuildTunnelWindow(&_build_tunnel_desc, tile, transport_type, road_rail_type, std::move(bl));
 	} else {
-		ShowErrorMessage(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, errmsg, WL_INFO, TileX(end) * TILE_SIZE, TileY(end) * TILE_SIZE);
+		ShowErrorMessage(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, errmsg, WL_INFO, TileX(tile2) * TILE_SIZE, TileY(tile2) * TILE_SIZE);
 	}
 }

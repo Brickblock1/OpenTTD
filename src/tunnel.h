@@ -14,7 +14,7 @@
 #include "tile_cmd.h"
 #include "timer/timer_game_calendar.h"
 
-static const uint MAX_TUNNELS = 5; ///< Maximal number of available tunnel specs.
+static const uint MAX_TUNNELS = 2; ///< Maximal number of available tunnel specs.
 
 typedef uint TunnelType; ///< Tunnel spec number.
 

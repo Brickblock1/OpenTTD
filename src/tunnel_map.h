@@ -12,6 +12,8 @@
 
 #include "rail_map.h"
 #include "road_map.h"
+#include "tunnel.h"
+#include "water_map.h"
 
 
 /**
@@ -39,7 +41,7 @@ inline bool IsTunnelTile(Tile t)
 /**
  * Determines the type of tunnel on a tile
  * @param t The tile to analyze
- * @pre IsBridgeTile(t)
+ * @pre IsTunnelTile(t)
  * @return The tunnel type
  */
 static inline TunnelType GetTunnelType(Tile t)
@@ -59,7 +61,7 @@ bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir);
  * @param d the direction facing out of the tunnel
  * @param r the road type used in the tunnel
  */
-inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, RoadType tram_rt)
+static inline void MakeRoadTunnel(Tile t, Owner o, TunnelType tunneltype, DiagDirection d, RoadType road_rt, RoadType tram_rt)
 {
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
@@ -67,7 +69,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
 	t.m3() = 0;
 	t.m4() = 0;
 	t.m5() = TRANSPORT_ROAD << 2 | d;
-	SB(t.m6(), 2, 4, 0);
+	SB(t.m6(), 2, 4, tunneltype);
 	t.m7() = 0;
 	t.m8() = 0;
 	SetRoadOwner(t, RTT_ROAD, o);
@@ -82,7 +84,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
  * @param d the direction facing out of the tunnel
  * @param r the rail type used in the tunnel
  */
-inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
+static inline void MakeRailTunnel(Tile t, Owner o, TunnelType tunneltype, DiagDirection d, RailType r)
 {
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
@@ -90,7 +92,7 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	t.m3() = 0;
 	t.m4() = 0;
 	t.m5() = TRANSPORT_RAIL << 2 | d;
-	SB(t.m6(), 2, 4, 0);
+	SB(t.m6(), 2, 4, tunneltype);
 	t.m7() = 0;
 	t.m8() = 0;
 	SetRailType(t, r);

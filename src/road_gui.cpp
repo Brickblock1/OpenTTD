@@ -139,9 +139,10 @@ static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
 	if (IsTunnelTile(tile)) {
 		Point pt = {0, 0};
-		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, tile, tile);
+		w->OnPlacePresize(pt, tile);
 	} else {
-		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_TUNNEL);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_ROAD, _cur_roadtype);
 	}
 }
 
@@ -678,6 +679,13 @@ struct BuildRoadToolbarWindow : Window {
 		CloseWindowById(WC_BUILD_WAYPOINT, TRANSPORT_ROAD);
 		CloseWindowById(WC_SELECT_STATION, 0);
 		CloseWindowByClass(WC_BUILD_BRIDGE);
+		CloseWindowByClass(WC_BUILD_TUNNEL);
+	}
+
+	void OnPlacePresize(Point pt, TileIndex tile) override
+	{
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_ROAD, 1, _cur_roadtype);
+		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, [[maybe_unused]] ViewportDragDropSelectionProcess select_proc, [[maybe_unused]] Point pt) override
@@ -728,12 +736,6 @@ struct BuildRoadToolbarWindow : Window {
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
 					break;
-
-				case DDSP_BUILD_TUNNEL:
-					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
-					break;
-
 
 				case DDSP_DEMOLISH_AREA:
 					GUIPlaceProcDragXY(select_proc, start_tile, end_tile);

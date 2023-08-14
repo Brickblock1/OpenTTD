@@ -99,7 +99,7 @@ public:
 	 *  tunnel succeeded, this function returns true.
 	 * @game @note Building a tunnel as deity (ScriptCompanyMode::IsDeity()) results in a tunnel owned by towns.
 	 */
-	static bool BuildTunnel(ScriptVehicle::VehicleType vehicle_type, TileIndex start);
+	static bool BuildTunnel(ScriptVehicle::VehicleType vehicle_type, TunnelID, TileIndex start);
 
 	/**
 	 * Remove the tunnel whose entrance is located at tile.

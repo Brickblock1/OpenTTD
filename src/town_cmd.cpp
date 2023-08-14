@@ -1426,14 +1426,17 @@ static bool GrowTownWithTunnel(const Town *t, const TileIndex tile, const DiagDi
 	/* Make sure the road can be continued past the tunnel. At this point, tunnel_tile holds the end tile of the tunnel. */
 	if (!CanRoadContinueIntoNextTile(t, tunnel_tile, tunnel_dir)) return false;
 
-	/* Attempt to build the tunnel. Return false if it fails to let the town build a road instead. */
-	RoadType rt = GetTownRoadType(t);
-	if (Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, tile, TRANSPORT_ROAD, rt).Succeeded()) {
-		Command<CMD_BUILD_TUNNEL>::Do(DC_EXEC | CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, tile, TRANSPORT_ROAD, rt);
-		_grow_town_result = GROWTH_SUCCEED;
-		return true;
-	}
+	for (uint8 times = 0; times <= 22; times++) {
+		byte tunnel_type = RandomRange(MAX_TUNNELS - 1);
 
+	/* Attempt to build the tunnel. Return false if it fails to let the town build a road instead. */
+		RoadType rt = GetTownRoadType(t);
+		if (Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, TRANSPORT_ROAD, tunnel_type, rt).Succeeded()) {
+			Command<CMD_BUILD_TUNNEL>::Do(DC_EXEC | CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()), tile, TRANSPORT_ROAD, tunnel_type, rt);
+			_grow_town_result = GROWTH_SUCCEED;
+			return true;
+		}
+	}
 	return false;
 }
 

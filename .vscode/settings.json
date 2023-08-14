@@ -1,7 +1,6 @@
 {
     "files.associations": {
         "*.rh": "cpp",
-        "valarray": "cpp",
-        "cstddef": "cpp"
+        "optional": "cpp"
     }
 }

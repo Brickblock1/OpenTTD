@@ -263,12 +263,12 @@ CommandCost CheckTunnelAvailability(TunnelType tunnel_type, uint tunnel_len, DoC
 
 	if (tunnel_type >= MAX_TUNNELS) return CMD_ERROR;
 
-	const TunnelSpec *b = GetTunnelSpec(tunnel_type);
-	if (b->avail_year > TimerGameCalendar::year) return CMD_ERROR;
+	const TunnelSpec *t = GetTunnelSpec(tunnel_type);
+	if (t->avail_year > TimerGameCalendar::year) return CMD_ERROR;
 
-	uint max = std::min(b->max_length, _settings_game.construction.max_tunnel_length);
+	uint max = std::min(t->max_length, _settings_game.construction.max_tunnel_length);
 
-	if (b->min_length > tunnel_len) return CMD_ERROR;
+	if (t->min_length > tunnel_len) return CMD_ERROR;
 	if (tunnel_len <= max) return CommandCost();
 	return_cmd_error(STR_ERROR_TUNNEL_TOO_LONG);
 }
@@ -721,9 +721,9 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 	if (ret.Failed()) return ret;
 
 	/* XXX - do NOT change 'ret' in the loop, as it is used as the price
-	 * for the clearing of the entrance of the tunnel. Assigning it to
-	 * cost before the loop will yield different costs depending on start-
-	 * position, because of increased-cost-by-length: 'cost += cost >> 3' */
+	* for the clearing of the entrance of the tunnel. Assigning it to
+	* cost before the loop will yield different costs depending on start-
+	* position, because of increased-cost-by-length: 'cost += cost >> 3' */
 
 	TileIndexDiff delta = TileOffsByDiagDir(direction);
 	DiagDirection tunnel_in_way_dir;
@@ -785,7 +785,7 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 	/* slope of end tile must be complementary to the slope of the start tile */
 	if (end_tileh != ComplementSlope(start_tileh)) {
 		/* Mark the tile as already cleared for the terraform command.
-		 * Do this for all tiles (like trees), not only objects. */
+		* Do this for all tiles (like trees), not only objects. */
 		ClearedObjectArea *coa = FindClearedObject(end_tile);
 		if (coa == nullptr) {
 			coa = &_cleared_object_areas.emplace_back(ClearedObjectArea{ end_tile, TileArea(end_tile, 1, 1) });
@@ -796,14 +796,14 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 		coa->first_tile = INVALID_TILE;
 
 		/* CMD_TERRAFORM_LAND may append further items to _cleared_object_areas,
-		 * however it will never erase or re-order existing items.
-		 * _cleared_object_areas is a value-type self-resizing vector, therefore appending items
-		 * may result in a backing-store re-allocation, which would invalidate the coa pointer.
-		 * The index of the coa pointer into the _cleared_object_areas vector remains valid,
-		 * and can be used safely after the CMD_TERRAFORM_LAND operation.
-		 * Deliberately clear the coa pointer to avoid leaving dangling pointers which could
-		 * inadvertently be dereferenced.
-		 */
+		* however it will never erase or re-order existing items.
+		* _cleared_object_areas is a value-type self-resizing vector, therefore appending items
+		* may result in a backing-store re-allocation, which would invalidate the coa pointer.
+		* The index of the coa pointer into the _cleared_object_areas vector remains valid,
+		* and can be used safely after the CMD_TERRAFORM_LAND operation.
+		* Deliberately clear the coa pointer to avoid leaving dangling pointers which could
+		* inadvertently be dereferenced.
+		*/
 		ClearedObjectArea *begin = _cleared_object_areas.data();
 		assert(coa >= begin && coa < begin + _cleared_object_areas.size());
 		size_t coa_index = coa - begin;
@@ -829,16 +829,16 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 		uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
 		if (transport_type == TRANSPORT_RAIL) {
 			if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
-			MakeRailTunnel(start_tile, company, direction,                 railtype);
-			MakeRailTunnel(end_tile,   company, ReverseDiagDir(direction), railtype);
+			MakeRailTunnel(start_tile, company, tunnel_type, direction,                 railtype);
+			MakeRailTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), railtype);
 			AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
 			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
 		} else {
 			if (c != nullptr) c->infrastructure.road[roadtype] += num_pieces * 2; // A full diagonal road has two road bits.
 			RoadType road_rt = RoadTypeIsRoad(roadtype) ? roadtype : INVALID_ROADTYPE;
 			RoadType tram_rt = RoadTypeIsTram(roadtype) ? roadtype : INVALID_ROADTYPE;
-			MakeRoadTunnel(start_tile, company, direction,                 road_rt, tram_rt);
-			MakeRoadTunnel(end_tile,   company, ReverseDiagDir(direction), road_rt, tram_rt);
+			MakeRoadTunnel(start_tile, company, tunnel_type, direction,                 road_rt, tram_rt);
+			MakeRoadTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), road_rt, tram_rt);
 		}
 		DirtyCompanyInfrastructureWindows(company);
 	}

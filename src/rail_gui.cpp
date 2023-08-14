@@ -316,11 +316,12 @@ void CcBuildRailTunnel(Commands cmd, const CommandCost &result, TileIndex tile)
 	if (result.Succeeded()) {
 		if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
 		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_RAIL, _cur_railtype);
 	} else {
-		SetRedErrorSquare(_build_tunnel_endtile);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_RAIL, _cur_railtype);
 	}
 }
-*/
 
 /**
  * Toggles state of the Remove button of Build rail toolbar
@@ -648,7 +649,7 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_TUNNEL:
-				HandlePlacePushButton(this, WID_RAT_BUILD_TUNNEL, GetRailTypeInfo(_cur_railtype)->cursor.tunnel, HT_SPECIAL);
+				HandlePlacePushButton(this, WID_RAT_BUILD_TUNNEL, GetRailTypeInfo(_cur_railtype)->cursor.tunnel, HT_SPECIAL); //was special
 				this->last_user_action = widget;
 				break;
 
@@ -754,11 +755,6 @@ struct BuildRailToolbarWindow : Window {
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
 					break;
 
-				case DDSP_BUILD_TUNNEL:
-					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
-					break;
-
 				case DDSP_PLACE_RAIL:
 					HandleAutodirPlacement();
 					break;
@@ -826,11 +822,12 @@ struct BuildRailToolbarWindow : Window {
 		CloseWindowById(WC_BUILD_WAYPOINT, TRANSPORT_RAIL);
 		CloseWindowById(WC_SELECT_STATION, 0);
 		CloseWindowByClass(WC_BUILD_BRIDGE);
+		CloseWindowByClass(WC_BUILD_TUNNEL);
 	}
 
-	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
+	void OnPlacePresize(Point pt, TileIndex tile) override
 	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_RAIL, _cur_railtype);
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_RAIL, 1, _cur_railtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
