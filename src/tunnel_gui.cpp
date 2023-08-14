@@ -231,7 +231,7 @@ public:
 		}
 	}
 
-	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
+	Point OnInitialPosition(int16_t sm_width, int16_t sm_height, int window_number) override
 	{
 		/* Position the window so hopefully the first tunnel from the list is under the mouse pointer. */
 		NWidgetBase *list = this->GetWidget<NWidgetBase>(WID_BTS_TUNNEL_LIST);
@@ -274,9 +274,9 @@ public:
 		}
 	}
 
-	EventState OnKeyPress(WChar key, uint16 keycode) override
+	EventState OnKeyPress(char32_t key, uint16_t keycode) override
 	{
-		const uint8 i = keycode - '1';
+		const uint8_t i = keycode - '1';
 		if (i < 9 && i < this->tunnels.size()) {
 			/* Build the requested tunnel */
 			this->BuildTunnel(this->tunnels[i].index);
@@ -460,7 +460,7 @@ void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transp
 				item.spec = GetTunnelSpec(tun_type);
 				/* Add to terraforming & bulldozing costs the cost of the
 				 * tunnel itself (not computed with DC_QUERY_COST) */
-				item.cost = ret.GetCost() + (((int64)tot_tunneldata_len * _price[PR_BUILD_TUNNEL] * item.spec->price) >> 8) + infra_cost;
+				item.cost = ret.GetCost() + (((int64_t)tot_tunneldata_len * _price[PR_BUILD_TUNNEL] * item.spec->price) >> 8) + infra_cost;
 				any_available = true;
 			}
 		}
