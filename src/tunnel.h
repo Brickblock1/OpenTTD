@@ -27,7 +27,8 @@ struct TunnelSpec {
 	uint16_t max_length;                ///< the maximum length (not counting start and end tile)
 	uint16_t price;                     ///< the price multiplier
 	uint16_t speed;                     ///< maximum travel speed (1 unit = 1/1.6 mph = 1 km-ish/h)
-	SpriteID sprite;                    ///< the sprite which is used in the GUI
+	SpriteID sprite_rail;               ///< the sprite which is used in the rail GUI
+	SpriteID sprite_road;               ///< the sprite which is used in the road GUI
 	PaletteID pal;                      ///< the palette which is used in the GUI
 	StringID material;                  ///< the string that contains the tunnel description
 	StringID transport_name[2];         ///< description of the tunnel, when built for road or rail

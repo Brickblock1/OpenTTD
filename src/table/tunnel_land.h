@@ -36,19 +36,20 @@
 
 /**
  * Describes the data that defines each tunnel in the game
- * @param y    year of availability
- * @param mnl  minimum length (not counting tunnel heads)
- * @param mxl  maximum length (not counting tunnel heads)
- * @param p    price multiplier
- * @param mxs  maximum speed allowed (1 unit = 1/1.6 mph = 1 km-ish/h)
- * @param spr sprite to use in purchase GUI
- * @param plt  palette for the sprite in purchase GUI
- * @param dsc  description of the tunnel in purchase GUI
- * @param nrl  description of the rail tunnel in query tool
- * @param nrd  description of the road tunnel in query tool
+ * @param y       year of availability
+ * @param mnl     minimum length (not counting tunnel heads)
+ * @param mxl  	  maximum length (not counting tunnel heads)
+ * @param p       price multiplier
+ * @param mxs     maximum speed allowed (1 unit = 1/1.6 mph = 1 km-ish/h)
+ * @param spr_rl  sprite to use in purchase GUI rail
+ * @param spr_rd  sprite to use in purchase GUI road
+ * @param plt     palette for the sprite in purchase GUI
+ * @param dsc     description of the tunnel in purchase GUI
+ * @param nrl     description of the rail tunnel in query tool
+ * @param nrd     description of the road tunnel in query tool
  */
-#define MBR(y, mnl, mxl, p, mxs, spr, plt, dsc, nrl, nrd) \
-	{y, mnl, mxl, p, mxs, spr, plt, dsc, { nrl, nrd }, nullptr,}
+#define MBR(y, mnl, mxl, p, mxs, spr_rl, spr_rd, plt, dsc, nrl, nrd) \
+	{y, mnl, mxl, p, mxs, spr_rl, spr_rd, plt, dsc, { nrl, nrd }, nullptr,}
 
 const TunnelSpec _orig_tunnel[] = {
 /*
@@ -58,12 +59,13 @@ const TunnelSpec _orig_tunnel[] = {
 	       |  |   |        price multiplier
 	       |  |   |        |    maximum speed
 	       |  |   |        |    |  			sprite to use in GUI rail
-	       |  |   |        |    |  			|      palette in GUI
+	       |  |   |        |    |  			|      sprite to use in GUI road
+		   |  |   |        |    |           |      | 	  palette in GUI
 	   string with description               name on rail                                         name on road
-	   |                              		 |     |                                              | */
-	MBR(   0, 0, 0xFFFF,  80,   UINT16_MAX, 0x97E, PAL_NONE,
+	   |                              		 |                                                    | */
+	MBR(   0, 0, 0xFFFF,  80,   UINT16_MAX, 0xFF,  0xFF,  PAL_NONE,
 	   STR_TUNNEL_NAME_DEFAULT,              STR_LAI_TUNNEL_DESCRIPTION_RAILROAD, 	              STR_LAI_TUNNEL_DESCRIPTION_ROAD),
-	MBR(   0, 1, 0,       80,   20,         0x97E, PAL_NONE,
+	MBR(   0, 1, 0,       80,   20,         0xFF,  0xDD,  PAL_NONE,
 	   STR_TUNNEL_NAME_DEFAULT,              STR_LAI_TUNNEL_DESCRIPTION_RAILROAD, 	              STR_LAI_TUNNEL_DESCRIPTION_ROAD),
 };
 

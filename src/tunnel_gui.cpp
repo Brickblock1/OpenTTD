@@ -204,14 +204,23 @@ public:
 				Dimension sprite_dim = {0, 0}; // Biggest tunnel sprite dimension
 				Dimension text_dim   = {0, 0}; // Biggest text dimension
 				for (const BuildTunnelData &tunnel_data : this->tunnels) {
+					const TunnelSpec *t = tunnel_data.spec;
 					switch (transport_type)
 					{
 					case TRANSPORT_RAIL:
-						sprite_dim = maxdim(sprite_dim, GetSpriteSize(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel));
+						if ((tunnel_data.index == 0) || (t->sprite_rail == 0xFF)) {
+							sprite_dim = maxdim(sprite_dim, GetSpriteSize(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel));	
+						} else {
+							sprite_dim = maxdim(sprite_dim, GetSpriteSize(t->sprite_rail));	
+						}
 						break;
 					
 					case TRANSPORT_ROAD:
-						sprite_dim = maxdim(sprite_dim, GetSpriteSize(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel));
+						if ((tunnel_data.index == 0) || (t->sprite_road == 0xFF)) {
+							sprite_dim = maxdim(sprite_dim, GetSpriteSize(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel));	
+						} else {
+							sprite_dim = maxdim(sprite_dim, GetSpriteSize(t->sprite_road));	
+						}
 						break;
 					
 					default:
@@ -252,15 +261,23 @@ public:
 				Rect tr = r.WithHeight(this->resize.step_height).Shrink(WidgetDimensions::scaled.matrix);
 				for (int i = this->vscroll->GetPosition(); this->vscroll->IsVisible(i) && i < (int)this->tunnels.size(); i++) {
 					const BuildTunnelData &tunnel_data = this->tunnels.at(i);
-					const TunnelSpec *b = tunnel_data.spec;
+					const TunnelSpec *t = tunnel_data.spec;
 					switch (transport_type)
 					{
 					case TRANSPORT_RAIL:
-						DrawSprite(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel, b->pal, tr.left, tr.bottom - GetSpriteSize(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel).height);
+						if ((tunnel_data.index == 0) || (t->sprite_rail == 0xFF)) {
+							DrawSprite(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel, t->pal, tr.left, tr.bottom - GetSpriteSize(GetRailTypeInfo((RailType)road_rail_type)->gui_sprites.build_tunnel).height);	
+						} else {
+							DrawSprite(t->sprite_rail, t->pal, tr.left, tr.bottom - GetSpriteSize(t->sprite_rail).height);	
+						}
 						break;
 					
 					case TRANSPORT_ROAD:
-						DrawSprite(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel, b->pal, tr.left, tr.bottom - GetSpriteSize(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel).height);
+						if ((tunnel_data.index == 0) || (t->sprite_road == 0xFF)) {
+							DrawSprite(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel, t->pal, tr.left, tr.bottom - GetSpriteSize(GetRoadTypeInfo((RoadType)road_rail_type)->gui_sprites.build_tunnel).height);
+						} else {
+							DrawSprite(t->sprite_road, t->pal, tr.left, tr.bottom - GetSpriteSize(t->sprite_road).height);	
+						}
 						break;
 					
 					default:
