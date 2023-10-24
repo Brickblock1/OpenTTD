@@ -376,7 +376,7 @@ static WindowDesc _build_tunnel_desc(
 	WDP_AUTO, "build_tunnel", 200, 114,
 	WC_BUILD_TUNNEL, WC_BUILD_TOOLBAR,
 	WDF_CONSTRUCTION,
-	_nested_build_tunnel_widgets, lengthof(_nested_build_tunnel_widgets)
+	std::begin(_nested_build_tunnel_widgets), std::end(_nested_build_tunnel_widgets)
 );
 
 /**

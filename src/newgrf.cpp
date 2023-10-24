@@ -2372,7 +2372,7 @@ static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteR
 				break;
 
 			case 0x0F: // Long format year of availability (year since year 0)
-				tunnel->avail_year = Clamp(TimerGameCalendar::Year(buf->ReadDWord()), MIN_YEAR, MAX_YEAR);
+				tunnel->avail_year = Clamp(TimerGameCalendar::Year(buf->ReadDWord()), CalendarTime::MIN_YEAR, CalendarTime::MAX_YEAR);
 				break;
 
 			case 0x10: { // purchase string
