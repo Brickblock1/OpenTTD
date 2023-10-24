@@ -2357,13 +2357,6 @@ static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteR
 		TunnelSpec *tunnel = &_tunnel[tuid + i];
 
 		switch (prop) {
-			case 0x08: { // Year of availability
-				/* We treat '0' as always available */
-				byte year = buf->ReadByte();
-				tunnel->avail_year = (year > 0 ? ORIGINAL_BASE_YEAR + year : 0);
-				break;
-			}
-
 			case 0x09: // Minimum length
 				tunnel->min_length = buf->ReadByte();
 				break;
@@ -2372,11 +2365,7 @@ static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteR
 				tunnel->max_length = buf->ReadByte();
 				if (tunnel->max_length > 16) tunnel->max_length = UINT16_MAX;
 				break;
-
-			case 0x0B: // Cost factor
-				tunnel->price = buf->ReadByte();
-				break;
-
+				
 			case 0x0C: // Maximum speed
 				tunnel->speed = buf->ReadWord();
 				if (tunnel->speed == 0) tunnel->speed = UINT16_MAX;
