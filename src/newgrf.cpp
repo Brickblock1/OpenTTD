@@ -2344,7 +2344,7 @@ static ChangeInfoResult BridgeChangeInfo(uint brid, int numinfo, int prop, ByteR
 	return ret;
 }
 
-static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteReader *buf)
+static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteReader &buf)
 {
 	ChangeInfoResult ret = CIR_SUCCESS;
 
@@ -2358,38 +2358,42 @@ static ChangeInfoResult TunnelChangeInfo(uint tuid, int numinfo, int prop, ByteR
 
 		switch (prop) {
 			case 0x09: // Minimum length
-				tunnel->min_length = buf->ReadByte();
+				tunnel->min_length = buf.ReadByte();
 				break;
 
 			case 0x0A: // Maximum length
-				tunnel->max_length = buf->ReadByte();
+				tunnel->max_length = buf.ReadByte();
 				if (tunnel->max_length > 16) tunnel->max_length = UINT16_MAX;
+				break;
+
+			case 0x0B: // Cost factor
+				tunnel->price = buf.ReadByte();
 				break;
 				
 			case 0x0C: // Maximum speed
-				tunnel->speed = buf->ReadWord();
+				tunnel->speed = buf.ReadWord();
 				if (tunnel->speed == 0) tunnel->speed = UINT16_MAX;
 				break;
 
 			case 0x0F: // Long format year of availability (year since year 0)
-				tunnel->avail_year = Clamp(TimerGameCalendar::Year(buf->ReadDWord()), CalendarTime::MIN_YEAR, CalendarTime::MAX_YEAR);
+				tunnel->avail_year = Clamp(TimerGameCalendar::Year(buf.ReadDWord()), CalendarTime::MIN_YEAR, CalendarTime::MAX_YEAR);
 				break;
 
 			case 0x10: { // purchase string
-				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf->ReadWord());
+				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf.ReadWord());
 				if (newone != STR_UNDEFINED) tunnel->material = newone;
 				break;
 			}
 
 			case 0x11: // description of tunnel with rails or roads
 			case 0x12: {
-				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf->ReadWord());
+				StringID newone = GetGRFStringID(_cur.grffile->grfid, buf.ReadWord());
 				if (newone != STR_UNDEFINED) tunnel->transport_name[prop - 0x11] = newone;
 				break;
 			}
 
 			case 0x13: // 16 bits cost multiplier
-				tunnel->price = buf->ReadWord();
+				tunnel->price = buf.ReadWord();
 				break;
 
 			default:

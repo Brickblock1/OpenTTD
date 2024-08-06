@@ -75,7 +75,7 @@ void ShowExtraViewportWindowForTileUnderCursor();
 void ShowBuildBridgeWindow(TileIndex start, TileIndex end, TransportType transport_type, uint8_t bridge_type);
 
 /* tunnel_gui.cpp */
-void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transport_type, byte bridge_type);
+void ShowBuildTunnelWindow(TileIndex start, TileIndex end, TransportType transport_type, uint8_t bridge_type);
 
 void ShowBuildIndustryWindow();
 void ShowFoundTownWindow();

@@ -248,7 +248,7 @@ CommandCost CheckBridgeAvailability(BridgeType bridge_type, uint bridge_len, DoC
 }
 
 /**
- * Is a tinnel of the specified type and length available?
+ * Is a tunnel of the specified type and length available?
  * @param tunnel_type Wanted type of tunnel.
  * @param tunnel_len  Wanted length of the tunnel.
  * @param flags       Type of operation.
@@ -715,11 +715,6 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 	DiagDirection direction = GetInclinedSlopeDirection(start_tileh);
 	if (direction == INVALID_DIAGDIR) return_cmd_error(STR_ERROR_SITE_UNSUITABLE_FOR_TUNNEL);
 
-	if (HasTileWaterGround(start_tile)) return_cmd_error(STR_ERROR_CAN_T_BUILD_ON_WATER);
-
-	CommandCost ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, start_tile);
-	if (ret.Failed()) return ret;
-
 	/* XXX - do NOT change 'ret' in the loop, as it is used as the price
 	* for the clearing of the entrance of the tunnel. Assigning it to
 	* cost before the loop will yield different costs depending on start-
@@ -766,81 +761,167 @@ CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex start_tile, TransportT
 		cost.AddCost(cost.GetCost() >> tiles_coef); // add a multiplier for longer tunnels
 	}
 
-	/* Add the cost of the entrance */
-	cost.AddCost(_price[PR_BUILD_TUNNEL]);
-	cost.AddCost(ret);
+	uint tunnel_len = GetTunnelBridgeLength(start_tile, end_tile);
+	
+	/* set and test tunnel length, availability */
+	CommandCost ret = CheckTunnelAvailability(tunnel_type, tunnel_len, flags);
+	if (ret.Failed()) return ret;
+	
+	tunnel_len += 2; // begin and end tiles/ramps
 
-	/* if the command fails from here on we want the end tile to be highlighted */
-	_build_tunnel_endtile = end_tile;
+	bool pbs_reservation = false;
 
-	if (tiles > _settings_game.construction.max_tunnel_length) return_cmd_error(STR_ERROR_TUNNEL_TOO_LONG);
+	Owner owner;
+	bool is_new_owner;
+	RoadType road_rt = INVALID_ROADTYPE;
+	RoadType tram_rt = INVALID_ROADTYPE;
 
-	if (HasTileWaterGround(end_tile)) return_cmd_error(STR_ERROR_CAN_T_BUILD_ON_WATER);
+	if (IsTunnelTile(start_tile) && GetTunnelBridgeTransportType(start_tile) == transport_type) {
+		/* Replace a current tunnel. */
 
-	/* Clear the tile in any case */
-	ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, end_tile);
-	if (ret.Failed()) return_cmd_error(STR_ERROR_UNABLE_TO_EXCAVATE_LAND);
-	cost.AddCost(ret);
+		switch (transport_type) {
+			case TRANSPORT_RAIL:
+				/* Keep the reservation, the path stays valid. */
+				pbs_reservation = HasTunnelBridgeReservation(start_tile);
+				break;
 
-	/* slope of end tile must be complementary to the slope of the start tile */
-	if (end_tileh != ComplementSlope(start_tileh)) {
-		/* Mark the tile as already cleared for the terraform command.
-		* Do this for all tiles (like trees), not only objects. */
-		ClearedObjectArea *coa = FindClearedObject(end_tile);
-		if (coa == nullptr) {
-			coa = &_cleared_object_areas.emplace_back(ClearedObjectArea{ end_tile, TileArea(end_tile, 1, 1) });
+			case TRANSPORT_ROAD:
+				/* Do not remove road types when upgrading a tunnel */
+				road_rt = GetRoadTypeRoad(start_tile);
+				tram_rt = GetRoadTypeTram(start_tile);
+				break;
+
+			default: break;
 		}
 
-		/* Hide the tile from the terraforming command */
-		TileIndex old_first_tile = coa->first_tile;
-		coa->first_tile = INVALID_TILE;
+		/* If this is a railway tunnel, make sure the railtypes match. */
+		if (transport_type == TRANSPORT_RAIL && GetRailType(start_tile) != railtype) {
+			return_cmd_error(STR_ERROR_MUST_DEMOLISH_TUNNEL_FIRST);
+		}
 
-		/* CMD_TERRAFORM_LAND may append further items to _cleared_object_areas,
-		* however it will never erase or re-order existing items.
-		* _cleared_object_areas is a value-type self-resizing vector, therefore appending items
-		* may result in a backing-store re-allocation, which would invalidate the coa pointer.
-		* The index of the coa pointer into the _cleared_object_areas vector remains valid,
-		* and can be used safely after the CMD_TERRAFORM_LAND operation.
-		* Deliberately clear the coa pointer to avoid leaving dangling pointers which could
-		* inadvertently be dereferenced.
-		*/
-		ClearedObjectArea *begin = _cleared_object_areas.data();
-		assert(coa >= begin && coa < begin + _cleared_object_areas.size());
-		size_t coa_index = coa - begin;
-		assert(coa_index < UINT_MAX); // more than 2**32 cleared areas would be a bug in itself
-		coa = nullptr;
+		/* If this is a road tunnel, make sure the roadtype matches. */
+		if (transport_type == TRANSPORT_ROAD) {
+			RoadType existing_rt = RoadTypeIsRoad(roadtype) ? road_rt : tram_rt;
+			if (existing_rt != roadtype && existing_rt != INVALID_ROADTYPE) {
+				return_cmd_error(STR_ERROR_MUST_DEMOLISH_TUNNEL_FIRST);
+			}
+		}
 
-		ret = std::get<0>(Command<CMD_TERRAFORM_LAND>::Do(flags, end_tile, end_tileh & start_tileh, false));
-		_cleared_object_areas[(uint)coa_index].first_tile = old_first_tile;
+		/* Do not replace town tunnels with lower speed tunnels, unless in scenario editor. */
+		if (!(flags & DC_QUERY_COST) && IsTileOwner(start_tile, OWNER_TOWN) &&
+				GetTunnelSpec(tunnel_type)->speed < GetTunnelSpec(GetTunnelType(start_tile))->speed &&
+				_game_mode != GM_EDITOR) {
+			Town *t = ClosestTownFromTile(start_tile, UINT_MAX);
+
+			if (t == nullptr) {
+				return CMD_ERROR;
+			} else {
+				SetDParam(0, t->index);
+				return_cmd_error(STR_ERROR_LOCAL_AUTHORITY_REFUSES_TO_ALLOW_THIS);
+			}
+		}
+
+		/* Do not replace the tunnel with the same tunnel type. */
+		if (!(flags & DC_QUERY_COST) && (tunnel_type == GetTunnelType(start_tile)) && (transport_type != TRANSPORT_ROAD || road_rt == roadtype || tram_rt == roadtype)) {
+			return_cmd_error(STR_ERROR_ALREADY_BUILT);
+		}
+
+		/* Do not allow replacing another company's tunnels. */
+		if (!IsTileOwner(start_tile, company) && !IsTileOwner(start_tile, OWNER_TOWN) && !IsTileOwner(start_tile, OWNER_NONE)) {
+			return_cmd_error(STR_ERROR_AREA_IS_OWNED_BY_ANOTHER);
+		}
+
+		/* The cost of clearing the current tunnel. */
+		cost.AddCost(tunnel_len * TunnelBridgeClearCost(start_tile, PR_CLEAR_TUNNEL));
+		owner = GetTileOwner(start_tile);
+
+		/* If tunnel belonged to bankrupt company, it has a new owner now */
+		is_new_owner = (owner == OWNER_NONE);
+		if (is_new_owner) owner = company;
+	} else {
+		/* Build a new tunnel. */
+
+		if (HasTileWaterGround(start_tile)) return_cmd_error(STR_ERROR_CAN_T_BUILD_ON_WATER);
+
+		CommandCost ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, start_tile);
+		if (ret.Failed()) return ret;
+
+		/* Add the cost of the entrance */
+		cost.AddCost(_price[PR_BUILD_TUNNEL]);
+		cost.AddCost(ret);
+
+		/* if the command fails from here on we want the end tile to be highlighted */
+		_build_tunnel_endtile = end_tile;
+
+		if (tiles > _settings_game.construction.max_tunnel_length) return_cmd_error(STR_ERROR_TUNNEL_TOO_LONG);
+
+		if (HasTileWaterGround(end_tile)) return_cmd_error(STR_ERROR_CAN_T_BUILD_ON_WATER);
+
+		/* Clear the tile in any case */
+		ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, end_tile);
 		if (ret.Failed()) return_cmd_error(STR_ERROR_UNABLE_TO_EXCAVATE_LAND);
 		cost.AddCost(ret);
-	}
-	cost.AddCost(_price[PR_BUILD_TUNNEL]);
 
-	/* Pay for the rail/road in the tunnel including entrances */
-	switch (transport_type) {
-		case TRANSPORT_ROAD: cost.AddCost((tiles + 2) * RoadBuildCost(roadtype) * 2); break;
-		case TRANSPORT_RAIL: cost.AddCost((tiles + 2) * RailBuildCost(railtype)); break;
-		default: NOT_REACHED();
-	}
+		/* slope of end tile must be complementary to the slope of the start tile */
+		if (end_tileh != ComplementSlope(start_tileh)) {
+			/* Mark the tile as already cleared for the terraform command.
+			* Do this for all tiles (like trees), not only objects. */
+			ClearedObjectArea *coa = FindClearedObject(end_tile);
+			if (coa == nullptr) {
+				coa = &_cleared_object_areas.emplace_back(ClearedObjectArea{ end_tile, TileArea(end_tile, 1, 1) });
+			}
 
-	if (flags & DC_EXEC) {
-		Company *c = Company::GetIfValid(company);
-		uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
-		if (transport_type == TRANSPORT_RAIL) {
-			if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
-			MakeRailTunnel(start_tile, company, tunnel_type, direction,                 railtype);
-			MakeRailTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), railtype);
-			AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
-			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
-		} else {
-			if (c != nullptr) c->infrastructure.road[roadtype] += num_pieces * 2; // A full diagonal road has two road bits.
-			RoadType road_rt = RoadTypeIsRoad(roadtype) ? roadtype : INVALID_ROADTYPE;
-			RoadType tram_rt = RoadTypeIsTram(roadtype) ? roadtype : INVALID_ROADTYPE;
-			MakeRoadTunnel(start_tile, company, tunnel_type, direction,                 road_rt, tram_rt);
-			MakeRoadTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), road_rt, tram_rt);
+			/* Hide the tile from the terraforming command */
+			TileIndex old_first_tile = coa->first_tile;
+			coa->first_tile = INVALID_TILE;
+
+			/* CMD_TERRAFORM_LAND may append further items to _cleared_object_areas,
+			* however it will never erase or re-order existing items.
+			* _cleared_object_areas is a value-type self-resizing vector, therefore appending items
+			* may result in a backing-store re-allocation, which would invalidate the coa pointer.
+			* The index of the coa pointer into the _cleared_object_areas vector remains valid,
+			* and can be used safely after the CMD_TERRAFORM_LAND operation.
+			* Deliberately clear the coa pointer to avoid leaving dangling pointers which could
+			* inadvertently be dereferenced.
+			*/
+			ClearedObjectArea *begin = _cleared_object_areas.data();
+			assert(coa >= begin && coa < begin + _cleared_object_areas.size());
+			size_t coa_index = coa - begin;
+			assert(coa_index < UINT_MAX); // more than 2**32 cleared areas would be a bug in itself
+			coa = nullptr;
+
+			ret = std::get<0>(Command<CMD_TERRAFORM_LAND>::Do(flags, end_tile, end_tileh & start_tileh, false));
+			_cleared_object_areas[(uint)coa_index].first_tile = old_first_tile;
+			if (ret.Failed()) return_cmd_error(STR_ERROR_UNABLE_TO_EXCAVATE_LAND);
+			cost.AddCost(ret);
 		}
-		DirtyCompanyInfrastructureWindows(company);
+		cost.AddCost(_price[PR_BUILD_TUNNEL]);
+
+		/* Pay for the rail/road in the tunnel including entrances */
+		switch (transport_type) {
+			case TRANSPORT_ROAD: cost.AddCost((tiles + 2) * RoadBuildCost(roadtype) * 2); break;
+			case TRANSPORT_RAIL: cost.AddCost((tiles + 2) * RailBuildCost(railtype)); break;
+			default: NOT_REACHED();
+		}
+
+		if (flags & DC_EXEC) {
+			Company *c = Company::GetIfValid(company);
+			uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
+			if (transport_type == TRANSPORT_RAIL) {
+				if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
+				MakeRailTunnel(start_tile, company, tunnel_type, direction,                 railtype);
+				MakeRailTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), railtype);
+				AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
+				YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
+			} else {
+				if (c != nullptr) c->infrastructure.road[roadtype] += num_pieces * 2; // A full diagonal road has two road bits.
+				RoadType road_rt = RoadTypeIsRoad(roadtype) ? roadtype : INVALID_ROADTYPE;
+				RoadType tram_rt = RoadTypeIsTram(roadtype) ? roadtype : INVALID_ROADTYPE;
+				MakeRoadTunnel(start_tile, company, tunnel_type, direction,                 road_rt, tram_rt);
+				MakeRoadTunnel(end_tile,   company, tunnel_type, ReverseDiagDir(direction), road_rt, tram_rt);
+			}
+			DirtyCompanyInfrastructureWindows(company);
+		}
 	}
 
 	return cost;

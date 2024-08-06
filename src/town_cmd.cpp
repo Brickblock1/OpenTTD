@@ -1427,7 +1427,7 @@ static bool GrowTownWithTunnel(const Town *t, const TileIndex tile, const DiagDi
 	if (!CanRoadContinueIntoNextTile(t, tunnel_tile, tunnel_dir)) return false;
 
 	for (uint8_t times = 0; times <= 22; times++) {
-		byte tunnel_type = RandomRange(MAX_TUNNELS - 1);
+		uint8_t tunnel_type = RandomRange(MAX_TUNNELS - 1);
 
 	/* Attempt to build the tunnel. Return false if it fails to let the town build a road instead. */
 		RoadType rt = GetTownRoadType();

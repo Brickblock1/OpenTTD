@@ -138,8 +138,9 @@ static void PlaceRoad_Bridge(TileIndex tile, Window *w)
 static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
 	if (IsTunnelTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
 		Point pt = {0, 0};
-		w->OnPlacePresize(pt, tile);
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
 	} else {
 		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_ROAD, _cur_roadtype);
@@ -737,6 +738,11 @@ struct BuildRoadToolbarWindow : Window {
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
 					break;
 
+				case DDSP_BUILD_TUNNEL:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
+					break;
+
 				case DDSP_DEMOLISH_AREA:
 					GUIPlaceProcDragXY(select_proc, start_tile, end_tile);
 					break;
@@ -808,12 +814,6 @@ struct BuildRoadToolbarWindow : Window {
 					break;
 			}
 		}
-	}
-
-	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
-	{
-		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, tile, TRANSPORT_ROAD, _cur_roadtype);
-		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
 	EventState OnCTRLStateChange() override

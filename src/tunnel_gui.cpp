@@ -20,7 +20,7 @@
 #include "tunnelbridge.h"
 #include "tilehighlight_func.h"
 #include "sortlist_type.h"
-#include "widgets/dropdown_func.h"
+#include "dropdown_func.h"
 #include "core/geometry_func.hpp"
 #include "tunnelbridge_map.h"
 #include "road_gui.h"
@@ -56,7 +56,7 @@ typedef GUIList<BuildTunnelData> GUITunnelList; ///< List of tunnels, used in #B
  * @param tile start tile
  * @param transport_type transport type.
  */
-void CcBuildTunnel(Commands cmd, const CommandCost &result, TileIndex tile, TransportType transport_type, TunnelType, byte)
+void CcBuildTunnel(Commands, const CommandCost &result, TileIndex tile, TransportType transport_type, TunnelType, uint8_t)
 {
 	if (result.Succeeded()) {
 		if (transport_type = TRANSPORT_RAIL) {
@@ -83,13 +83,17 @@ private:
 	static Listing last_sorting; ///< Last setting of the sort.
 
 	/* Constants for sorting the tunnels */
-	static const StringID sorter_names[];
-	static GUITunnelList::SortFunction * const sorter_funcs[];
+	static inline const StringID sorter_names[] = {
+		STR_SORT_BY_NUMBER,
+		STR_SORT_BY_COST,
+		STR_SORT_BY_MAX_SPEED,
+	};
+	static const std::initializer_list<GUITunnelList::SortFunction * const> sorter_funcs;
 
 	/* Internal variables */
 	TileIndex tile;
 	TransportType transport_type;
-	byte road_rail_type;
+	uint8_t road_rail_type;
 	GUITunnelList tunnels;
 	int tunneltext_offset; ///< Horizontal offset of the text describing the tunnel properties in #WID_BTS_TUNNEL_LIST relative to the left edge.
 	Scrollbar *vscroll;
@@ -154,11 +158,11 @@ private:
 	}
 
 public:
-	BuildTunnelWindow(WindowDesc *desc, TileIndex tile, TransportType transport_type, byte road_rail_type, GUITunnelList &&bl) : Window(desc),
+	BuildTunnelWindow(WindowDesc &desc, TileIndex tile, TransportType transport_type, uint8_t road_rail_type, GUITunnelList &&tl) : Window(desc),
 		tile(tile),
 		transport_type(transport_type),
 		road_rail_type(road_rail_type),
-		tunnels(std::move(bl))
+		tunnels(std::move(tl))
 	{
 		this->CreateNestedTree();
 		this->vscroll = this->GetScrollbar(WID_BTS_SCROLLBAR);
@@ -167,8 +171,8 @@ public:
 		this->FinishInitNested(transport_type); // Initializes 'this->tunneltext_offset'.
 
 		this->parent = FindWindowById(WC_BUILD_TOOLBAR, transport_type);
-		this->tunnels.SetListing(this->last_sorting);
-		this->tunnels.SetSortFuncs(this->sorter_funcs);
+		this->tunnels.SetListing(BuildTunnelWindow::last_sorting);
+		this->tunnels.SetSortFuncs(BuildTunnelWindow::sorter_funcs);
 		this->tunnels.NeedResort();
 		this->SortTunnelsList();
 
@@ -177,27 +181,24 @@ public:
 
 	~BuildTunnelWindow()
 	{
-		this->last_sorting = this->tunnels.GetListing();
+		BuildTunnelWindow::last_sorting = this->tunnels.GetListing();
 	}
 
-	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
+	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, Dimension &resize) override
 	{
 		switch (widget) {
 			case WID_BTS_DROPDOWN_ORDER: {
 				Dimension d = GetStringBoundingBox(this->GetWidget<NWidgetCore>(widget)->widget_data);
 				d.width += padding.width + Window::SortButtonWidth() * 2; // Doubled since the string is centred and it also looks better.
 				d.height += padding.height;
-				*size = maxdim(*size, d);
+				size = maxdim(size, d);
 				break;
 			}
 			case WID_BTS_DROPDOWN_CRITERIA: {
-				Dimension d = {0, 0};
-				for (const StringID *str = this->sorter_names; *str != INVALID_STRING_ID; str++) {
-					d = maxdim(d, GetStringBoundingBox(*str));
-				}
+				Dimension d = GetStringListBoundingBox(BuildTunnelWindow::sorter_names);
 				d.width += padding.width;
 				d.height += padding.height;
-				*size = maxdim(*size, d);
+				size = maxdim(size, d);
 				break;
 			}
 			case WID_BTS_TUNNEL_LIST: {
@@ -230,11 +231,11 @@ public:
 				}
 				sprite_dim.height++; // Sprite is rendered one pixel down in the matrix field.
 				text_dim.height++; // Allowing the bottom row pixels to be rendered on the edge of the matrix field.
-				resize->height = std::max(sprite_dim.height, text_dim.height) + padding.height; // Max of both sizes + account for matrix edges.
+				resize.height = std::max(sprite_dim.height, text_dim.height) + padding.height; // Max of both sizes + account for matrix edges.
 
 				this->tunneltext_offset = sprite_dim.width + WidgetDimensions::scaled.hsep_normal; // Left edge of text, 1 pixel distance from the sprite.
-				size->width = this->tunneltext_offset + text_dim.width + padding.width;
-				size->height = 4 * resize->height; // Smallest tunnel gui is 1 entry high in the matrix. 4 seems to be magic number
+				size.width = this->tunneltext_offset + text_dim.width + padding.width;
+				size.height = 4 * resize.height; // Smallest tunnel gui is 1 entry high in the matrix. 4 seems to be magic number
 				break;
 			}
 		}
@@ -303,7 +304,7 @@ public:
 		return ES_NOT_HANDLED;
 	}
 
-	void OnClick(Point pt, int widget, int click_count) override
+	void OnClick(Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
 		switch (widget) {
 			default: break;
@@ -322,7 +323,7 @@ public:
 				break;
 
 			case WID_BTS_DROPDOWN_CRITERIA:
-				ShowDropDownMenu(this, this->sorter_names, this->tunnels.SortType(), WID_BTS_DROPDOWN_CRITERIA, 0, 0);
+				ShowDropDownMenu(this, BuildTunnelWindow::sorter_names, this->tunnels.SortType(), WID_BTS_DROPDOWN_CRITERIA, 0, 0);
 				break;
 		}
 	}
@@ -346,18 +347,10 @@ public:
 Listing BuildTunnelWindow::last_sorting = {true, 2};
 
 /** Available tunnel sorting functions. */
-GUITunnelList::SortFunction * const BuildTunnelWindow::sorter_funcs[] = {
+const std::initializer_list<GUITunnelList::SortFunction * const> BuildTunnelWindow::sorter_funcs = {
 	&TunnelIndexSorter,
 	&TunnelPriceSorter,
 	&TunnelSpeedSorter
-};
-
-/** Names of the sorting functions. */
-const StringID BuildTunnelWindow::sorter_names[] = {
-	STR_SORT_BY_NUMBER,
-	STR_SORT_BY_COST,
-	STR_SORT_BY_MAX_SPEED,
-	INVALID_STRING_ID
 };
 
 /** Widgets of the tunnel gui. */
@@ -393,7 +386,7 @@ static WindowDesc _build_tunnel_desc(
 	WDP_AUTO, "build_tunnel", 200, 114,
 	WC_BUILD_TUNNEL, WC_BUILD_TOOLBAR,
 	WDF_CONSTRUCTION,
-	std::begin(_nested_build_tunnel_widgets), std::end(_nested_build_tunnel_widgets)
+	_nested_build_tunnel_widgets
 );
 
 /**
@@ -406,7 +399,7 @@ static WindowDesc _build_tunnel_desc(
  * @param transport_type The transport type
  * @param road_rail_type The road/rail type
  */
-void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transport_type, byte road_rail_type)
+void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transport_type, uint8_t road_rail_type)
 {
 	CloseWindowByClass(WC_BUILD_TUNNEL);
 	/* The tunnel length */
@@ -433,7 +426,7 @@ void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transp
 	StringID errmsg = INVALID_STRING_ID;
 	CommandCost ret = Command<CMD_BUILD_TUNNEL>::Do(CommandFlagsToDCFlags(GetCommandFlags<CMD_BUILD_TUNNEL>()) | DC_QUERY_COST, tile, transport_type, last_tunnel_type, road_rail_type);
 
-	GUITunnelList bl;
+	GUITunnelList tl;
 	if (ret.Failed()) {
 		errmsg = ret.GetErrorMessage();
 	} else {
@@ -472,7 +465,7 @@ void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transp
 			type_check = CheckTunnelAvailability(tun_type, tunnel_len + 2);
 			if (type_check.Succeeded()) {
 				/* tunnel is accepted, add to list */
-				BuildTunnelData &item = bl.emplace_back();
+				BuildTunnelData &item = tl.emplace_back();
 				item.index = tun_type;
 				item.spec = GetTunnelSpec(tun_type);
 				/* Add to terraforming & bulldozing costs the cost of the
@@ -487,9 +480,13 @@ void ShowBuildTunnelWindow(TileIndex tile, TileIndex tile2, TransportType transp
 			errmsg = type_check.GetErrorMessage();
 		}
 	}
-
-	if (!bl.empty()) {
-		new BuildTunnelWindow(&_build_tunnel_desc, tile, transport_type, road_rail_type, std::move(bl));
+	/* if only one type is avaliable build that type*/
+	if (tl.size() == 1) { 
+		Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildTunnel, tile, transport_type, tl.emplace_back().index, road_rail_type);
+		return;
+	}
+	if (!tl.empty()) {
+		new BuildTunnelWindow(_build_tunnel_desc, tile, transport_type, road_rail_type, std::move(tl));
 	} else {
 		ShowErrorMessage(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, errmsg, WL_INFO, TileX(tile2) * TILE_SIZE, TileY(tile2) * TILE_SIZE);
 	}

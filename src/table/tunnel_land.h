@@ -67,6 +67,8 @@ const TunnelSpec _orig_tunnel[] = {
 	   STR_TUNNEL_NAME_DEFAULT,              STR_LAI_TUNNEL_DESCRIPTION_RAILROAD, 	              STR_LAI_TUNNEL_DESCRIPTION_ROAD),
 	MBR(   0, 1, 0,       80,   20,         0xFF,  0xDD,  PAL_NONE,
 	   STR_TUNNEL_NAME_DEFAULT,              STR_LAI_TUNNEL_DESCRIPTION_RAILROAD, 	              STR_LAI_TUNNEL_DESCRIPTION_ROAD),
+	MBR(   0, 1, 0,       80,   30,         0xFF,  0xDD,  PAL_NONE,
+	   STR_TUNNEL_NAME_DEFAULT,              STR_LAI_TUNNEL_DESCRIPTION_RAILROAD, 	              STR_LAI_TUNNEL_DESCRIPTION_ROAD),
 };
 
 #undef MBR

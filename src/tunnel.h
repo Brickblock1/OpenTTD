@@ -14,7 +14,7 @@
 #include "tile_cmd.h"
 #include "timer/timer_game_calendar.h"
 
-static const uint MAX_TUNNELS = 2; ///< Maximal number of available tunnel specs.
+static const uint MAX_TUNNELS = 16; ///< Maximal number of available tunnel specs.
 
 typedef uint TunnelType; ///< Tunnel spec number.
 
@@ -23,7 +23,7 @@ typedef uint TunnelType; ///< Tunnel spec number.
  */
 struct TunnelSpec {
 	TimerGameCalendar::Year avail_year; ///< the year where it becomes available
-	byte min_length;                    ///< the minimum length (not counting start and end tile)
+	uint8_t min_length;                 ///< the minimum length (not counting start and end tile)
 	uint16_t max_length;                ///< the maximum length (not counting start and end tile)
 	uint16_t price;                     ///< the price multiplier
 	uint16_t speed;                     ///< maximum travel speed (1 unit = 1/1.6 mph = 1 km-ish/h)

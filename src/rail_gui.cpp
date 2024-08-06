@@ -306,7 +306,8 @@ static void PlaceRail_Tunnel(TileIndex tile, Window *w)
 		Point pt = {0, 0};
 		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
 	} else {
-		VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_TUNNEL);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_ROAD, _cur_railtype);
 	}
 }
 
@@ -753,6 +754,11 @@ struct BuildRailToolbarWindow : Window {
 				case DDSP_BUILD_BRIDGE:
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype);
+					break;
+
+				case DDSP_BUILD_TUNNEL:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_railtype);
 					break;
 
 				case DDSP_PLACE_RAIL:
