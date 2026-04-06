@@ -483,6 +483,12 @@ public:
 			if (IsRoadTT()) spd *= 2;
 			max_speed = std::min(max_speed, spd);
 		}
+		/* Check for in-tunnel speed limit */
+		if (IsTunnelTile(m_old_tile)) {
+			int spd = GetTunnelSpec(GetTunnelType(m_old_tile))->speed;
+			if (IsRoadTT()) spd *= 2;
+			max_speed = std::min(max_speed, spd);
+		}
 		/* Check for speed limit imposed by railtype */
 		if (IsRailTT()) {
 			uint16_t rail_speed = GetRailTypeInfo(GetRailType(this->old_tile))->max_speed;

@@ -420,6 +420,11 @@ int Train::GetCurrentMaxSpeed() const
 		if (u->track == TRACK_BIT_WORMHOLE && !u->vehstatus.Test(VehState::Hidden)) {
 			max_speed = std::min<int>(max_speed, GetBridgeSpec(GetBridgeType(u->tile))->speed);
 		}
+
+		/* Vehicle is in a tunnel. */
+		if (u->track == TRACK_BIT_WORMHOLE && (u->vehstatus.Test(VehState::Hidden))) {
+			max_speed = std::min<int>(max_speed, GetTunnelSpec(GetTunnelType(u->tile))->speed);
+		}
 	}
 
 	max_speed = std::min<int>(max_speed, this->current_order.GetMaxSpeed());

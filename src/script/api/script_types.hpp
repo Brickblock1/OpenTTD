@@ -23,7 +23,7 @@
  *                           <td> introduction \ref newgrf_changes "(1)"            </td>
  *                           <td> never \ref newgrf_changes "(1)"                   </td>
  *                           <td> no \ref newgrf_changes "(1)"                      </td></tr>
- * <tr><td>#CargoType   </td><td> cargo type                                        </td>
+ * <tr><td>#CargoID     </td><td> cargo type                                        </td>
  *                           <td> game start \ref newgrf_changes "(1)"              </td>
  *                           <td> never \ref newgrf_changes "(1)"                   </td>
  *                           <td> no \ref newgrf_changes "(1)"                      </td></tr>
@@ -103,6 +103,10 @@
  *                           <td> game start                                        </td>
  *                           <td> never                                             </td>
  *                           <td> no                                                </td></tr>
+ * <tr><td>#TunnelID    </td><td> tunnel type                                       </td>
+ *                           <td> introduction \ref newgrf_changes "(1)"            </td>
+ *                           <td> never \ref newgrf_changes "(1)"                   </td>
+ *                           <td> no \ref newgrf_changes "(1)"                      </td></tr>
  * <tr><td>#VehicleID   </td><td> vehicle                                           </td>
  *                           <td> construction, autorenew, autoreplace              </td>
  *                           <td> destruction, autorenew, autoreplace               </td>
@@ -143,6 +147,7 @@ using StoryPageID = uint16_t; ///< The ID of a story page.
 using StoryPageElementID = uint16_t; ///< The ID of a story page element.
 using TileIndex = uint32_t; ///< The ID of a map location.
 using TownID = uint16_t; ///< The ID of a town.
+using TunnelType = uint32_t; ///< The ID of a tunnel type.
 using VehicleID = uint32_t; ///< The ID of a vehicle.
 #endif /* DOXYGEN_API */
 

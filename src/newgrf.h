@@ -91,6 +91,7 @@ enum GrfSpecFeature : uint8_t {
 	GSF_TRAMTYPES,
 	GSF_ROADSTOPS,
 	GSF_BADGES,
+	GSF_TUNNELS,
 	GSF_END,
 
 	GSF_DEFAULT = GSF_END, ///< Unspecified feature, default badge

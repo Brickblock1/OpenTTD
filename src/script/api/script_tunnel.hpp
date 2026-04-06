@@ -84,6 +84,7 @@ public:
 	 *  network.
 	 * @param start Where to start the tunnel.
 	 * @param vehicle_type The vehicle-type of tunnel to build.
+	 * @param tunnel_type The tunnel-type to build.
 	 * @pre ScriptMap::IsValidTile(start).
 	 * @pre (vehicle_type == ScriptVehicle::VT_ROAD && ScriptRoad::IsRoadTypeAvailable(ScriptRoad::GetCurrentRoadType())) ||
 	 *      (vehicle_type == ScriptVehicle::VT_RAIL && ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType())).
@@ -99,7 +100,7 @@ public:
 	 *  tunnel succeeded, this function returns true.
 	 * @game @note Building a tunnel as deity (ScriptCompanyMode::IsDeity()) results in a tunnel owned by towns.
 	 */
-	static bool BuildTunnel(ScriptVehicle::VehicleType vehicle_type, TileIndex start);
+	static bool BuildTunnel(ScriptVehicle::VehicleType vehicle_type, TunnelType tunnel_type, TileIndex start);
 
 	/**
 	 * Remove the tunnel whose entrance is located at tile.

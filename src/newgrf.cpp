@@ -16,6 +16,7 @@
 #include "engine_func.h"
 #include "engine_base.h"
 #include "bridge.h"
+#include "tunnel.h"
 #include "town.h"
 #include "newgrf_engine.h"
 #include "newgrf_text.h"
@@ -423,6 +424,9 @@ void ResetNewGRFData()
 
 	/* Copy/reset original bridge info data */
 	ResetBridges();
+
+	/* Copy/reset original tunnel info data */
+	ResetTunnels();
 
 	/* Reset rail type information */
 	ResetRailTypes();

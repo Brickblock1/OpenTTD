@@ -15,13 +15,16 @@
 #include "rail_type.h"
 #include "road_type.h"
 #include "transport_type.h"
+#include "bridge.h"
+#include "tunnel.h"
 
-CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, RailType railtype, RoadType roadtype);
-CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, TransportType transport_type, RailType railtype, RoadType roadtype);
+CommandCost CmdBuildBridge(DoCommandFlag flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, RailType railtype, RoadType roadtype);
+CommandCost CmdBuildTunnel(DoCommandFlag flags, TileIndex tile_start, TransportType transport_type, TunnelType tunnel_type, RailType railtype, RoadType roadtype);
 
 DEF_CMD_TRAIT(Commands::BuildBridge, CmdBuildBridge, CommandFlags({CommandFlag::Deity, CommandFlag::Auto, CommandFlag::NoWater}), CommandType::LandscapeConstruction)
 DEF_CMD_TRAIT(Commands::BuildTunnel, CmdBuildTunnel, CommandFlags({CommandFlag::Deity, CommandFlag::Auto}),                       CommandType::LandscapeConstruction)
 
 void CcBuildBridge(Commands, const CommandCost &result, TileIndex end_tile, TileIndex tile_start, TransportType transport_type, BridgeType, RailType, RoadType);
+void CcBuildTunnel(Commands cmd, const CommandCost &result, TileIndex tile_start, TransportType transport_type, TunnelType, RailType, RoadType);
 
 #endif /* TUNNELBRIDGE_CMD_H */

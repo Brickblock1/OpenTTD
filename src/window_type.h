@@ -401,6 +401,12 @@ enum WindowClass : uint16_t {
 	WC_BUILD_BRIDGE,
 
 	/**
+	 * Build tunnel; %Window numbers:
+	 *   - #TransportType = #BuildTunnelSelectionWidgets
+	 */
+	WC_BUILD_TUNNEL,
+
+	/**
 	 * Build station; %Window numbers:
 	 *   - #TRANSPORT_AIR = #AirportPickerWidgets
 	 *   - #TRANSPORT_WATER = #DockToolbarWidgets

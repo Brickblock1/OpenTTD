@@ -137,25 +137,18 @@ static void PlaceRoad_Bridge(TileIndex tile, Window *w)
 }
 
 /**
- * Callback executed after a build road tunnel command has been called.
- *
- * @param result Whether the build succeeded.
- * @param start_tile Starting tile of the tunnel.
+ * Callback to start building a tunnel.
+ * @param tile Start tile of the tunnel.
  */
-void CcBuildRoadTunnel(Commands, const CommandCost &result, TileIndex start_tile)
+static void PlaceRoad_Tunnel(TileIndex tile, Window *w)
 {
-	if (result.Succeeded()) {
-		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, start_tile);
-		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
-
-		DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(start_tile));
-		ConnectRoadToStructure(start_tile, start_direction);
-
-		TileIndex end_tile = GetOtherTunnelBridgeEnd(start_tile);
-		DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
-		ConnectRoadToStructure(end_tile, end_direction);
+	if (IsTunnelTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
+		Point pt = {0, 0};
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
 	} else {
-		SetRedErrorSquare(_build_tunnel_endtile);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_ROAD, _cur_roadtype);
 	}
 }
 
@@ -696,8 +689,7 @@ struct BuildRoadToolbarWindow : Window {
 				break;
 
 			case WID_ROT_BUILD_TUNNEL:
-				Command<Commands::BuildTunnel>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRoadTunnel,
-						tile, TRANSPORT_ROAD, INVALID_RAILTYPE, _cur_roadtype);
+				PlaceRoad_Tunnel(tile, this);
 				break;
 
 			case WID_ROT_CONVERT_ROAD:
@@ -727,6 +719,13 @@ struct BuildRoadToolbarWindow : Window {
 		CloseWindowById(WC_BUILD_WAYPOINT, TRANSPORT_ROAD);
 		CloseWindowById(WC_SELECT_STATION, 0);
 		CloseWindowByClass(WC_BUILD_BRIDGE);
+		CloseWindowByClass(WC_BUILD_TUNNEL);
+	}
+
+	void OnPlacePresize(Point pt, TileIndex tile) override
+	{
+		Command<CMD_BUILD_TUNNEL>::Do(DC_AUTO, tile, TRANSPORT_ROAD, 1, _cur_roadtype);
+		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
 	void OnPlaceDrag(ViewportPlaceMethod select_method, [[maybe_unused]] ViewportDragDropSelectionProcess select_proc, [[maybe_unused]] Point pt) override
@@ -781,6 +780,11 @@ struct BuildRoadToolbarWindow : Window {
 				case DDSP_BUILD_BRIDGE:
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_ROAD, INVALID_RAILTYPE, _cur_roadtype);
+					break;
+
+				case DDSP_BUILD_TUNNEL:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_roadtype);
 					break;
 
 				case DDSP_DEMOLISH_AREA:
@@ -860,9 +864,10 @@ struct BuildRoadToolbarWindow : Window {
 		}
 	}
 
+	/* unused but for reference when dealing with line*/
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
-		Command<Commands::BuildTunnel>::Do(DoCommandFlag::Auto, tile, TRANSPORT_ROAD, INVALID_RAILTYPE, _cur_roadtype);
+		Command<Commands::BuildTunnel>::Do(DoCommandFlag::QueryCost, tile, TRANSPORT_ROAD, INVALID_RAILTYPE, _cur_roadtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 

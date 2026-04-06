@@ -480,6 +480,11 @@ inline int RoadVehicle::GetCurrentMaxSpeed() const
 		if (u->state == RVSB_WORMHOLE && !u->vehstatus.Test(VehState::Hidden)) {
 			max_speed = std::min(max_speed, GetBridgeSpec(GetBridgeType(u->tile))->speed * 2);
 		}
+
+		/* Vehicle is in a tunnel. */
+		if (u->state == RVSB_WORMHOLE && (u->vehstatus.Test(VehState::Hidden))) {
+			max_speed = std::min(max_speed, GetTunnelSpec(GetTunnelType(u->tile))->speed * 2);
+		}
 	}
 
 	return std::min(max_speed, this->current_order.GetMaxSpeed() * 2);

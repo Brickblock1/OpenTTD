@@ -304,18 +304,28 @@ static void PlaceRail_Bridge(TileIndex tile, Window *w)
 	}
 }
 
-/**
- * Command callback for building a tunnel.
- * @param result The result of the command.
- * @param tile The tile where the command was executed on.
- */
-void CcBuildRailTunnel(Commands, const CommandCost &result, TileIndex tile)
+static void PlaceRail_Tunnel(TileIndex tile, Window *w)
+{
+	if (IsTunnelTile(tile)) {
+		TileIndex other_tile = GetOtherTunnelBridgeEnd(tile);
+		Point pt = {0, 0};
+		w->OnPlaceMouseUp(VPM_X_OR_Y, DDSP_BUILD_TUNNEL, pt, other_tile, tile);
+	} else {
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_ROAD, _cur_railtype, INVALID_ROADTYPE);
+	}
+}
+
+/** Command callback for building a tunnel 
+void CcBuildRailTunnel(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded()) {
 		if (_settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
 		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_RAIL, _cur_railtype);
 	} else {
-		SetRedErrorSquare(_build_tunnel_endtile);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+		ShowBuildTunnelWindow(tile, _build_tunnel_endtile, TRANSPORT_RAIL, _cur_railtype);
 	}
 }
 
@@ -720,11 +730,15 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_BRIDGE:
 				PlaceRail_Bridge(tile, this);
 				break;
-
+			
 			case WID_RAT_BUILD_TUNNEL:
-				Command<Commands::BuildTunnel>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype, INVALID_ROADTYPE);
+				PlaceRail_Tunnel(tile, this);
 				break;
-
+			/*
+			case WID_RAT_BUILD_TUNNEL:
+				PlaceRail_Tunnel(tile, this);
+				break;
+			*/
 			case WID_RAT_CONVERT_RAIL:
 				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CONVERT_RAIL);
 				break;
@@ -754,6 +768,11 @@ struct BuildRailToolbarWindow : Window {
 				case DDSP_BUILD_BRIDGE:
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TRANSPORT_RAIL, _cur_railtype, INVALID_ROADTYPE);
+					break;
+
+				case DDSP_BUILD_TUNNEL:
+					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+					ShowBuildTunnelWindow(start_tile, end_tile, TRANSPORT_ROAD, _cur_railtype, INVALID_ROADTYPE);
 					break;
 
 				case DDSP_PLACE_RAIL:
@@ -823,11 +842,12 @@ struct BuildRailToolbarWindow : Window {
 		CloseWindowById(WC_BUILD_WAYPOINT, TRANSPORT_RAIL);
 		CloseWindowById(WC_SELECT_STATION, 0);
 		CloseWindowByClass(WC_BUILD_BRIDGE);
+		CloseWindowByClass(WC_BUILD_TUNNEL);
 	}
 
-	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
+	void OnPlacePresize(Point pt, TileIndex tile) override
 	{
-		Command<Commands::BuildTunnel>::Do(DoCommandFlag::Auto, tile, TRANSPORT_RAIL, _cur_railtype, INVALID_ROADTYPE);
+		Command<Commands::BuildTunnel>::Do(AUTO, tile, TRANSPORT_RAIL, 1, _cur_railtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
